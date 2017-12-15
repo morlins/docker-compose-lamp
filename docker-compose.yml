@@ -1,0 +1,40 @@
+version: '2'
+
+services:
+ #Mysql container
+ mysql-morlini:
+   image: mysql
+   container_name: mysql-morlini
+   hostname: mysql-morlini
+   volumes:
+     - ./mysql/data:/var/lib/mysql
+     - ./mysql/dump:/docker-entrypoint-initdb.d
+     - ./mysql/conf/wpressdb.cnf:/etc/mysql/conf.d/wpressdb.cnf
+   env_file:
+     - ./mysql/conf/mysql.env
+   ports:
+     - 3306:3306
+   expose:
+     - '3306'
+ #Mediawpress container
+ wpress-morlini:
+   image: morlins/smw-nodata-service
+   container_name: wpress-morlini
+   hostname: wpress-morlini
+   environment:
+     - MEDIAwpress_DB_HOST=mysql
+     - MEDIAwpress_DB_PORT=3306
+   ports:
+     - 80:80
+     - 443:443
+   links:
+     - mysql-morlini:mysql
+   volumes:
+     - ./wpress/php-src:/opt/wpress/src
+     - ./wpress/wiki-start.sh:/opt/wiki-start.sh
+     - ./wpress/conf/wpress.conf:/etc/apache2/sites-enabled/wpress.conf
+     - ./wpress/conf/cert:/opt/cert
+     - ./wpress/conf/php.ini:/etc/php5/apache2/php.ini
+   depends_on:
+     - mysql-morlini
+   command: ["/opt/wait-for-it.sh", "mysql:3306", "--", "/opt/wiki-start.sh", ""]
